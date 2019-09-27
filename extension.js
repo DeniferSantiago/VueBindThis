@@ -4,27 +4,77 @@ const vscode = require('vscode');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
+class Intellisense  {
+	/**
+	 * 
+	 * @param {vscode.TextDocument} document 
+	 * @param {vscode.Position} position 
+	 */
+	provideCompletionItems(document, position) {
 
+		// get all text until the `position` and check if it reads `console.`
+		// and if so then complete if `log`, `warn`, and `error`
+		const simpleCompletion = new vscode.CompletionItem('Hello World!');
+		let linePrefix = document.lineAt(position).text.substr(0, position.character);
+		/*if (!linePrefix.endsWith('console.')) {
+			return undefined;
+		}*/
+		return [
+			simpleCompletion,
+			new vscode.CompletionItem('perro', vscode.CompletionItemKind.Method),
+			new vscode.CompletionItem('gato', vscode.CompletionItemKind.Method),
+			new vscode.CompletionItem('liebre', vscode.CompletionItemKind.Method),
+		];
+	}
+}
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+		let provider1 = vscode.languages.registerCompletionItemProvider('javascript', {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "vuebindthis" is now active!');
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('extension.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World!');
-	});
-
-	context.subscriptions.push(disposable);
+			provideCompletionItems(document, position, token, context) {
+	
+				// a completion item that can be accepted by a commit character,
+				// the `commitCharacters`-property is set which means that the completion will
+				// be inserted and then the character will be typed.
+				const thisCompletion = new vscode.CompletionItem('this');
+				thisCompletion.commitCharacters = ['.'];
+				thisCompletion.documentation = new vscode.MarkdownString('Press `.` to get `this.`');
+	
+				// return all completion items as array
+				return [
+					thisCompletion
+				];
+			}
+		});
+	
+		const provider2 = vscode.languages.registerCompletionItemProvider(
+			'javascript',
+			{
+				provideCompletionItems(document, position) {
+	
+					// get all text until the `position` and check if it reads `console.`
+					// and if so then complete if `log`, `warn`, and `error`
+					let linePrefix = document.lineAt(position).text.substr(0, position.character);
+					let posInictial = new vscode.Position(0, 0);
+					let range = new vscode.Range(posInictial,position);
+					let text = document.getText(range);
+					if (!linePrefix.endsWith('this.')) {
+						return undefined;
+					}
+	
+					return [
+						new vscode.CompletionItem('log', vscode.CompletionItemKind.Method),
+						new vscode.CompletionItem('warn', vscode.CompletionItemKind.Method),
+						new vscode.CompletionItem('error', vscode.CompletionItemKind.Method),
+					];
+				}
+			},
+			'.' // triggered whenever a '.' is being typed
+		);
+	
+	context.subscriptions.push(provider1, provider2);
 }
 exports.activate = activate;
 
