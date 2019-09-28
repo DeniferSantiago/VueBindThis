@@ -86,57 +86,8 @@ function activate(context) {
 							});
 						}
 					});
-					var textUnformatted = "";
-					for (let i = iniPos.line; i <= finPos.line; i++) {
-						let line = lines[i];
-						if(i === iniPos.line){
-							if(i === finPos.line)
-								textUnformatted += line.substring(iniPos.pos,finPos.pos + 1);
-							else
-								textUnformatted += line.substring(iniPos.pos,line.length);
-						}
-						else if(i === finPos.line){
-							textUnformatted += line.substring(0,finPos.pos + 1);
-						}
-						else
-							textUnformatted += line;
-					}
-					var textData = '';
-					var historyString = '';
-					for (let i = 0; i < textUnformatted.length; i++) {
-						const char = textUnformatted[i];
-						if(i === 0){
-							textData += '"' + char;
-						}
-						else if(char === "'" || char === "`" || char === '"'){
-							if(historyString[historyString.length - 1] === char)
-								historyString = historyString.slice(0, -1);
-							else
-								historyString += char;
-							textData += char;
-						}
-						else if(char === " " || char === "	" || char === "\n" || char === "\r"){
-							if(historyString === "")
-								continue;
-							else
-								textData += char;
-						}
-						else if(char === ":" && historyString === "")
-							textData += '"' + char;
-						else if((char === "," || char === "{") && historyString === "")
-							textData += char + '"';
-						else if(char === "["){
-							historyString += char;
-							textData += char;
-						}
-						else if(char === "]"){
-							textData += char;
-							if(historyString[historyString.length - 1] === "[")
-								historyString = historyString.slice(0, -1);
-						}
-						else
-							textData += char;
-					}
+					var textUnformatted = getTextUnformated(lines, iniPos, finPos);
+					var textData = formatedText(textUnformatted);
 					var objData = JSON.parse(`{${textData}}`);
 					var data = objData.data;
 					var completionItems = [];
@@ -155,6 +106,63 @@ function activate(context) {
 			'.'
 		);
 	context.subscriptions.push(provider1, provider2);
+}
+function getTextUnformated(textLines, iniPos, finPos) {
+	var textUnformatted = "";
+	for (let i = iniPos.line; i <= finPos.line; i++) {
+		let line = textLines[i];
+		if(i === iniPos.line){
+			if(i === finPos.line)
+				textUnformatted += line.substring(iniPos.pos,finPos.pos + 1);
+			else
+				textUnformatted += line.substring(iniPos.pos,line.length);
+		}
+		else if(i === finPos.line){
+			textUnformatted += line.substring(0,finPos.pos + 1);
+		}
+		else
+			textUnformatted += line;
+	}
+	return textUnformatted;
+}
+function formatedText(unFormatedText) {
+	var textData = '';
+	var historyString = '';
+	for (let i = 0; i < unFormatedText.length; i++) {
+		const char = unFormatedText[i];
+		if(i === 0){
+			textData += '"' + char;
+		}
+		else if(char === "'" || char === "`" || char === '"'){
+			if(historyString[historyString.length - 1] === char)
+				historyString = historyString.slice(0, -1);
+			else
+				historyString += char;
+			textData += char;
+		}
+		else if(char === " " || char === "	" || char === "\n" || char === "\r"){
+			if(historyString === "")
+				continue;
+			else
+				textData += char;
+		}
+		else if(char === ":" && historyString === "")
+			textData += '"' + char;
+		else if((char === "," || char === "{") && historyString === "")
+			textData += char + '"';
+		else if(char === "["){
+			historyString += char;
+			textData += char;
+		}
+		else if(char === "]"){
+			textData += char;
+			if(historyString[historyString.length - 1] === "[")
+				historyString = historyString.slice(0, -1);
+		}
+		else
+			textData += char;
+	}
+	return textData;
 }
 exports.activate = activate;
 function deactivate() {}
