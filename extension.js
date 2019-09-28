@@ -96,7 +96,7 @@ function activate(context) {
 								textUnformatted += line.substring(iniPos.pos,line.length);
 						}
 						else if(i === finPos.line){
-							textUnformatted += line.substring(0,finPos.pos);
+							textUnformatted += line.substring(0,finPos.pos + 1);
 						}
 						else
 							textUnformatted += line;
@@ -113,25 +113,43 @@ function activate(context) {
 								historyString = historyString.slice(0, -1);
 							else
 								historyString += char;
+							textData += char;
 						}
-						else if(char === " " || char === "	"){
+						else if(char === " " || char === "	" || char === "\n" || char === "\r"){
 							if(historyString === "")
-								return;
+								continue;
 							else
 								textData += char;
 						}
 						else if(char === ":" && historyString === "")
 							textData += '"' + char;
-						else if(char === "," && historyString === "")
-							textData += '"' + char;
+						else if((char === "," || char === "{") && historyString === "")
+							textData += char + '"';
+						else if(char === "["){
+							historyString += char;
+							textData += char;
+						}
+						else if(char === "]"){
+							textData += char;
+							if(historyString[historyString.length - 1] === "[")
+								historyString = historyString.slice(0, -1);
+						}
+						else
+							textData += char;
 					}
-					var objData = JSON.parse(textData);
-					console.log(objData);
-					return [
-						new vscode.CompletionItem('log', vscode.CompletionItemKind.Method),
-						new vscode.CompletionItem('warn', vscode.CompletionItemKind.Method),
-						new vscode.CompletionItem('error', vscode.CompletionItemKind.Method),
-					];
+					var objData = JSON.parse(`{${textData}}`);
+					var data = objData.data;
+					var completionItems = [];
+					for (const key in data) {
+						if (data.hasOwnProperty(key)) {
+							const element = data[key];
+							let icon = vscode.CompletionItemKind.Property;
+							let item = new vscode.CompletionItem(key, icon);
+							item.preselect = true;
+							completionItems.push(item);
+						}
+					}
+					return completionItems;
 				}
 			},
 			'.'
