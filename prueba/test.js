@@ -1,4 +1,9 @@
-new Vue({
+var hola = "Hello";
+function clip(params) {
+    let number = 9 * 4;
+    return number / 2 * 8 + 4;
+}
+let app = new Vue({
     el:"#app",
     data:{bool: false,
         num: 4,obj: {
@@ -18,4 +23,9 @@ new Vue({
             return this.bool? "true": "false";
         }
     }
-})
+});
+function name(params) {
+    if(!params)
+        return null;
+    return "cosas";
+}

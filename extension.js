@@ -1,32 +1,10 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
-
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
-class Intellisense  {
-	/**
-	 * 
-	 * @param {vscode.TextDocument} document 
-	 * @param {vscode.Position} position 
-	 */
-	provideCompletionItems(document, position) {
-
-		// get all text until the `position` and check if it reads `console.`
-		// and if so then complete if `log`, `warn`, and `error`
-		const simpleCompletion = new vscode.CompletionItem('Hello World!');
-		let linePrefix = document.lineAt(position).text.substr(0, position.character);
-		/*if (!linePrefix.endsWith('console.')) {
-			return undefined;
-		}*/
-		return [
-			simpleCompletion,
-			new vscode.CompletionItem('perro', vscode.CompletionItemKind.Method),
-			new vscode.CompletionItem('gato', vscode.CompletionItemKind.Method),
-			new vscode.CompletionItem('liebre', vscode.CompletionItemKind.Method),
-		];
-	}
-}
+import PropCompletion from "./Class/PropCompletion";
+import VueIntellisense from "./Class/VueIntellisense";
+/**
+ * //@type{Array<PropCompletion>}
+ */
+//var completionItems = [];
 /**
  * @param {vscode.ExtensionContext} context
  */
@@ -49,45 +27,42 @@ function activate(context) {
 					if (!linePrefix.endsWith('this.')) {
 						return undefined;
 					}
-					let posInictial = new vscode.Position(0, 0);
-					let range = new vscode.Range(posInictial,position);
-					let docText = document.getText(range);
-					let lines = docText.split(/\r?\n/g);
-					var iniPos = {line: -1, pos:-1};
+					/**@type{vscode.Position} */
+					var iniPos = null;
+					/**@type{vscode.Position} */
+					var finPos = null;
 					var llaves = -1;
 					var iniData = false;
-					var finPos = {line: -1, pos:-1};
-					lines.forEach((textLine, i) => {
-						if(finPos.pos !== -1)
-							return;
-						if(iniPos.pos === -1){
-							iniPos.pos = textLine.search(/\bdata *:/);
-							iniPos.line = i;
+					for (let i = 0; i < document.lineCount; i++) {
+						const line = document.lineAt(i);
+						if(finPos !== null)
+							break;
+						else if(iniPos === null){
+							let posData = line.text.search(/\bdata *:/);
+							iniPos = posData !== -1? new vscode.Position(i, posData) : null;
 						}
-						if(iniPos.pos > -1){
-							textLine.split("").forEach((char, j) => {
-								if(j < iniPos.pos || iniData && llaves === -1){
+						if(iniPos !== null){//no podemos usar else ya que posiblemente haya tomado el valor en la anterior pregunta.
+							line.text.split("").forEach((char, j) => {
+								if(j < iniPos.character || finPos !== null)
 									return;
-								}
 								if(char === "{"){
 									llaves++;
 									iniData = true;
 								}
 								else if(char === "}"){
 									llaves--;
-									if(iniData && llaves === -1){
-										finPos.line = i;
-										finPos.pos = j;
-									}
-									else if(llaves < -1){
+									if(iniData && llaves === -1)
+										finPos = new vscode.Position(i, j + 1);
+									else if(llaves < -1)
 										throw new Error("Error de sintaxis de la propiedad 'data'. Está cerrando la llave sin haberla abierto.");
-									}
 								}
 							});
 						}
-					});
-					var textUnformatted = getTextUnformated(lines, iniPos, finPos);
-					var textData = formatedText(textUnformatted);
+					}
+					
+					var dataRange = new vscode.Range(iniPos, finPos);
+					var dataText = document.getText(dataRange);
+					var textData = formatedText(dataText);
 					var objData = JSON.parse(`{${textData}}`);
 					var data = objData.data;
 					var completionItems = [];
@@ -106,24 +81,6 @@ function activate(context) {
 			'.'
 		);
 	context.subscriptions.push(provider1, provider2);
-}
-function getTextUnformated(textLines, iniPos, finPos) {
-	var textUnformatted = "";
-	for (let i = iniPos.line; i <= finPos.line; i++) {
-		let line = textLines[i];
-		if(i === iniPos.line){
-			if(i === finPos.line)
-				textUnformatted += line.substring(iniPos.pos,finPos.pos + 1);
-			else
-				textUnformatted += line.substring(iniPos.pos,line.length);
-		}
-		else if(i === finPos.line){
-			textUnformatted += line.substring(0,finPos.pos + 1);
-		}
-		else
-			textUnformatted += line;
-	}
-	return textUnformatted;
 }
 function formatedText(unFormatedText) {
 	var textData = '';
