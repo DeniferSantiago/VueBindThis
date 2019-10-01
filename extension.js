@@ -31,16 +31,48 @@ class VueIntellisense{
 		this.dataString = "";
 		this.methodsString = "";
 		this.computedString = "";
-	}
-	/**
-	 * @param{vscode.TextDocument} newValue
-	 */
-	set document(newValue){
-		this.document = newValue;
 		this.getVueString();
+	}
+	set lang(lang) {
+		this.language = lang;
 	}
 	getVueString(){
 		let doc = this.document;
+		/**@type{vscode.Position} */
+		var iniPos = null;
+		/**@type{vscode.Position} */
+		var finPos = null;
+		var llaves = -1;
+		var iniData = false;
+		for (let i = 0; i < doc.lineCount; i++) {
+			const line = doc.lineAt(i);
+			if(finPos !== null)
+				break;
+			else if(iniPos === null){
+				let posData = line.text.search(/((?<=\=( |	*))\bnew( ) *Vue)\b/);
+				iniPos = posData !== -1? new vscode.Position(i, posData) : null;
+			}
+			if(iniPos !== null){//no podemos usar else ya que posiblemente haya tomado el valor en la anterior pregunta.
+				line.text.split("").forEach((char, j) => {
+					if((j < iniPos.character  && i === iniPos.line) || finPos !== null)
+						return;
+					if(char === "{" || char === "("){
+						llaves++;
+						iniData = true;
+					}
+					else if(char === "}" || char === ")"){
+						llaves--;
+						if(iniData && llaves === -1)
+							finPos = new vscode.Position(i, j + 1);
+						else if(llaves < -1)
+							throw new Error("Error de sintaxis de la instancia 'Vue'. Está cerrando la llave sin haberla abierto.");
+					}
+				});
+			}
+		}
+		var vueRange = new vscode.Range(iniPos, finPos);
+		var vueText = doc.getText(vueRange);
+		console.log(vueText);
 	}
 }
 /**
@@ -94,7 +126,7 @@ function activate(context) {
 					}
 					if(iniPos !== null){//no podemos usar else ya que posiblemente haya tomado el valor en la anterior pregunta.
 						line.text.split("").forEach((char, j) => {
-							if(j < iniPos.character || finPos !== null)
+							if((j < iniPos.character && i === iniPos.line) || finPos !== null)
 								return;
 							if(char === "{"){
 								llaves++;

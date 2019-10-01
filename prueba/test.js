@@ -6,9 +6,9 @@ function clip(params) {
 let app = new Vue({
     el:"#app",
     data:{bool: false,
-        num: 4,obj: {
+num: 4,obj: {
             name: "Louis",lastname:"walker"
-        },
+},
         arr: ["my","name","is",
          "skrillex"],
         str: "comment"
