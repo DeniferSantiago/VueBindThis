@@ -4,7 +4,7 @@ bind this in a vue instance.
 
 ## Usage:
 
-1. Install node with npm
+1. Install [Node.js](https://nodejs.org/en/)
 2. Run comand: ´npm install -g yo generator-code´
 3. Clone this proyect: ´git clone https://github.com/DeniferSantiago/VueBindThis.git´
 4. Open proyect with vs code
