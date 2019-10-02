@@ -38,17 +38,25 @@ class PropCompletion{
 				if(typeof element === "object"){
 					if(!Array.isArray(element)){
 						itemCompletion.childs = PropCompletion.getPropCompletion(element);
-						itemCompletion.itemCompletion.commitCharacters = [".", ";", "="];
+						let commitCharacters = [".", ";", "="];
+						itemCompletion.itemCompletion.commitCharacters = commitCharacters;
+						itemCompletion.itemCompletion.documentation = new vscode.MarkdownString("Press `"+commitCharacters.join(" or ")+"` to get `"+itemCompletion.itemCompletion.label +"`");
 					}
 				}
 				else if(typeof element === "number"){
-					itemCompletion.itemCompletion.commitCharacters = ["=", ";", "+", "-", "*", "/"];
+					let commitCharacters = ["=", ";", "+", "-", "*", "/"]
+					itemCompletion.itemCompletion.commitCharacters = commitCharacters;
+					itemCompletion.itemCompletion.documentation = new vscode.MarkdownString("Press `"+commitCharacters.join(" or ")+"` to get `"+itemCompletion.itemCompletion.label +"`");
 				}
 				else if(typeof element === "undefined" || typeof element === "boolean"){
-					itemCompletion.itemCompletion.commitCharacters = [";", "="];
+					let commitCharacters = [";", "="];
+					itemCompletion.itemCompletion.commitCharacters = commitCharacters;
+					itemCompletion.itemCompletion.documentation = new vscode.MarkdownString("Press `"+commitCharacters.join(" or ")+"` to get `"+itemCompletion.itemCompletion.label +"`");
 				}
 				else if(typeof element === "string"){
-					itemCompletion.itemCompletion.commitCharacters = ["=", ";", "+"];
+					let commitCharacters = ["=", ";", "+"];
+					itemCompletion.itemCompletion.commitCharacters = commitCharacters;
+					itemCompletion.itemCompletion.documentation = new vscode.MarkdownString("Press `"+commitCharacters.join(" or ")+"` to get `"+itemCompletion.itemCompletion.label +"`");
 				}
 				completionItems.push(itemCompletion);
 			}
@@ -154,7 +162,7 @@ var vueIntellisense = null;
 function activate(context) {
 	let watch = vscode.workspace.createFileSystemWatcher("**/*.js", true,false,false);
 	watch.onDidChange(uri => {
-		if(vueIntellisense !== null && vueIntellisense.document.uri === uri){
+		if(vueIntellisense !== null && vueIntellisense.document.uri.path === uri.path){
 			vscode.workspace.openTextDocument(uri).then(doc => {
 				createVueIntellisense(doc, true);
 			});
@@ -176,31 +184,82 @@ function activate(context) {
 			provideCompletionItems(document, position) {
 				createVueIntellisense(document);
 				let linePrefix = document.lineAt(position).text.substr(0, position.character);
-				if(linePrefix[linePrefix.length -1] !== "."){
-					return undefined;
+				let prefixArray = linePrefix.split(/[;.\t ]/).reverse()
+				let prefix = linePrefix[linePrefix.length-1] === "."? prefixArray[1] : prefixArray[0];
+				if(prefix === "this"){
+					/**
+					 * @type {Array<vscode.CompletionItem>}
+					 */
+					var items = []; 
+					completions.forEach(compItem => {
+						items.push(compItem.itemCompletion);
+					});
+					return items;
 				}
-				if (!linePrefix.endsWith('this.')) {
-					let objs = completions.filter(x => x.childs.length > 0);
-					for (let i = 0; i < objs.length; i++) {
-						const element = objs[i];
-						if(linePrefix.endsWith(element.itemCompletion.label + ".")){
-							let items = [];
-							element.childs.forEach(compItem => {
-								items.push(compItem.itemCompletion);
-							});
-							return items;
+				else{
+					/**
+					 * @param {PropCompletion} compItem 
+					 * @param {String} prefix
+					 */
+					let findItem = (compItem, prefix) => {
+						for (let i = 0; i < compItem.childs.length; i++) {
+							const item = compItem.childs[i];
+							if(item.itemCompletion.label === prefix){
+								if(compItem.childs.length === 0)
+									return undefined;
+								else{
+									/**
+					 				* @type {Array<vscode.CompletionItem>}
+									*/
+									var items = []; 
+									item.childs.forEach(cItem => {
+										items.push(cItem.itemCompletion);
+									});
+									return items; 
+								}
+							}
+							else{
+								let result = findItem(item, prefix);
+								if(result)
+									return result;
+								else
+									continue;
+							}
+						}
+						return undefined;
+					}
+					for (let i = 0; i < completions.length; i++) {
+						const compItem = completions[i];
+						if(compItem.itemCompletion.label === prefix){
+							if(linePrefix[linePrefix.length - 1] === "."){
+								if(compItem.childs.length === 0)
+									return undefined;
+								else{
+									/**
+					 				* @type {Array<vscode.CompletionItem>}
+									*/
+									var items = []; 
+									compItem.childs.forEach(item => {
+										items.push(item.itemCompletion);
+									});
+									return items; 
+								}
+							}
+							return undefined;
+						}
+						else if(compItem.itemCompletion.label.startsWith(prefix)){
+							return [compItem.itemCompletion];
+						}
+						else{
+							let result = findItem(compItem, prefix);
+							if(result)
+								return result;
+							else
+								continue;
 						}
 					}
-					return undefined;
+
 				}
-				/**
-				 * @type {Array<vscode.CompletionItem>}
-				 */
-				var items = []; 
-				completions.forEach(compItem => {
-					items.push(compItem.itemCompletion);
-				});
-				return items;
 			}
 		},
 		'.'

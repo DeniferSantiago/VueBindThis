@@ -5,10 +5,20 @@ function clip(params) {
 }
 let app = new Vue({
     el:"#app",
-    data:{bool: false,
-num: 4,obj: {
-            name: "Louis",lastname:"walker"
-},
+    data:{
+        bool: false,
+        num: 4,
+        obj: {
+            name: "Louis",
+            lastname:"walker", 
+            data: {
+                years:15, 
+                languages: {
+                    name: "Spanish", 
+                    level: "Native"
+                }
+            }
+        },
         arr: ["my","name","is",
          "skrillex"],
         str: "comment"
