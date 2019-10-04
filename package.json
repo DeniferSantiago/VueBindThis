@@ -2,7 +2,7 @@
 	"name": "vuebindthis",
 	"displayName": "VueBindThis",
 	"description": "bind this in a vue instance.",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.38.0"
 	},
