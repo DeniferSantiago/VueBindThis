@@ -2,7 +2,7 @@
 	"name": "vuebindthis",
 	"displayName": "VueBindThis",
 	"description": "bind this in a vue instance.",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"publisher": "Denifer",
 	"repository": {
 		"type": "git",
