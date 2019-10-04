@@ -42,6 +42,12 @@ class PropCompletion{
 						itemCompletion.itemCompletion.commitCharacters = commitCharacters;
 						itemCompletion.itemCompletion.documentation = new vscode.MarkdownString("Press `"+commitCharacters.join(" or ")+"` to get `"+itemCompletion.itemCompletion.label +"`");
 					}
+					else{
+						itemCompletion.type = "array";
+						let commitCharacters = ["[", "="];
+						itemCompletion.itemCompletion.commitCharacters = commitCharacters;
+						itemCompletion.itemCompletion.documentation = new vscode.MarkdownString("Press `"+commitCharacters.join(" or ")+"` to get `"+itemCompletion.itemCompletion.label +"`");
+					}
 				}
 				else if(typeof element === "number"){
 					let commitCharacters = ["=", ";", "+", "-", "*", "/"]
@@ -84,8 +90,8 @@ class VueIntellisense{
 	}
 	getCompletionItems(){
 		let regex = new RegExp(/((?<!: *)(?<=( |\t)*)(\b[A-z]+)(?=(\(\)|:( |\t*)function *))(?!((\(\)\r?\n))|(\(\);)))/, "gs");
-		let methodsName = this.methodsString.match(regex);
-		let computedName = this.computedString.match(regex);
+		let methodsName = this.methodsString === null? [] : this.methodsString.match(regex);
+		let computedName = this.computedString === null? [] : this.computedString.match(regex);
 		let data = this.dataObj.data || {};
 		/**
 		 * @type{Array<PropCompletion>}
@@ -309,7 +315,7 @@ function formatedText(unFormatedText) {
  * @param {vscode.TextDocument} document 
  */
 function createVueIntellisense(document, isUpdate = false) {
-	if(vueIntellisense === null || isUpdate){
+	if(vueIntellisense === null || isUpdate || document.uri.path !== vueIntellisense.document.uri.path){
 		vueIntellisense = new VueIntellisense(document);
 		completions = vueIntellisense.getCompletionItems();
 	}
@@ -320,6 +326,9 @@ function createVueIntellisense(document, isUpdate = false) {
  * @param {RegExp} regex
  */
 function getRangeText(doc, regex) {
+	if(!doc){
+		return null;
+	}
 	/**@type{vscode.Position} */
 	var iniPos = null;
 	/**@type{vscode.Position} */

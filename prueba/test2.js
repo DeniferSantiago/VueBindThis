@@ -1,8 +1,3 @@
-var hola = "Hello";
-function clip(params) {
-    let number = 9 * 4;
-    return number / 2 * 8 + 4;
-}
 let app = new Vue({
     el:"#app",
     data:{
@@ -23,7 +18,7 @@ let app = new Vue({
         arr: ["my","name","is",
          "skrillex"],
         str: "comment",
-        comment: "Hola"
+        coca_cola: "Hola"
     },
     methods:{
         workingData(){
@@ -36,8 +31,3 @@ let app = new Vue({
         }
     }
 });
-function name(params) {
-    if(!params)
-        return null;
-    return "cosas";
-}
