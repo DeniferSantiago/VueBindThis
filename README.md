@@ -4,6 +4,12 @@ bind this in a vue instance.
 
 ## Usage:
 
+![Usage](images/usagedemonstration.gif)
+
+To improve the hierarchy of suggestions disable Javascript ›Suggest: Names. Just add this line in your settings.json file:
+`"javascript.suggest.names": false`
+## Contribute:
+
 1. Install [Node.js](https://nodejs.org/en/)
 2. Run comand: ´npm install -g yo generator-code´
 3. Clone this proyect: ´git clone https://github.com/DeniferSantiago/VueBindThis.git´
