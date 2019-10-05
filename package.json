@@ -3,6 +3,7 @@
 	"displayName": "VueBindThis",
 	"description": "bind this in a vue instance.",
 	"version": "0.0.4",
+	"icon": "./images/vuebindthis-icon.png",
 	"publisher": "Denifer",
 	"repository": {
 		"type": "git",
