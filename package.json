@@ -14,8 +14,10 @@
 	"extensionKind": "workspace",
 	"homepage": "https://github.com/DeniferSantiago/VueBindThis",
 	"license": "MIT",
-	"contributors": ["Denifer"],
-	"version": "0.0.5",
+	"contributors": [
+		"Denifer"
+	],
+	"version": "0.0.6",
 	"icon": "images/vuebindthis-icon.jpg",
 	"publisher": "Denifer",
 	"repository": {
