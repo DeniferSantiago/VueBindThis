@@ -82,6 +82,12 @@ class VueIntellisense{
 		this.computedString = "";
 		/**@type{vscode.Range} */
 		this.vueRange = null;
+		/**@type{vscode.Range} */
+		this.dataRange = null;
+		/**@type{vscode.Range} */
+		this.methodsRange = null;
+		/**@type{vscode.Range} */
+		this.computedRange = null;
 		this.getVueString();
 		this.getDataString();
 		this.getMethodsString();
@@ -119,37 +125,40 @@ class VueIntellisense{
 	}
 	getDataString(){
 		let doc = this.document;
-		let dataRange = getRangeText(this.vueString, /\bdata *:/);
-		if(dataRange === null)
+		let range = getRangeText(this.vueString, /\bdata *:/);
+		if(range === null)
 			this.dataString = null;
 		else{
-			let posIni = new vscode.Position(this.vueRange.start.line + dataRange.start.line, dataRange.start.character);
-			let posFin = new vscode.Position(this.vueRange.start.line + dataRange.end.line, dataRange.end.character);
-			var dataText = doc.getText(new vscode.Range(posIni, posFin));
+			let posIni = new vscode.Position(this.vueRange.start.line + range.start.line, range.start.character);
+			let posFin = new vscode.Position(this.vueRange.start.line + range.end.line, range.end.character);
+			this.dataRange = new vscode.Range(posIni, posFin);
+			var dataText = doc.getText(this.dataRange);
 			this.dataString = dataText;
 		}
 	}
 	getMethodsString(){
 		let doc = this.document;
-		let methodsRange = getRangeText(this.vueString, /\bmethods *:/);
-		if(methodsRange === null)
+		let range = getRangeText(this.vueString, /\bmethods *:/);
+		if(range === null)
 			this.methodsString = null;
 		else{
-			let posIni = new vscode.Position(this.vueRange.start.line + methodsRange.start.line, methodsRange.start.character);
-			let posFin = new vscode.Position(this.vueRange.start.line + methodsRange.end.line, methodsRange.end.character);
-			var methodsText = doc.getText(new vscode.Range(posIni, posFin));
+			let posIni = new vscode.Position(this.vueRange.start.line + range.start.line, range.start.character);
+			let posFin = new vscode.Position(this.vueRange.start.line + range.end.line, range.end.character);
+			this.methodsRange = new vscode.Range(posIni, posFin);
+			var methodsText = doc.getText(this.methodsRange);
 			this.methodsString = methodsText;
 		}
 	}
 	getComputedString(){
 		let doc = this.document;
-		let computedRange = getRangeText(this.vueString, /\bcomputed *:/);
-		if(computedRange === null)
+		let range = getRangeText(this.vueString, /\bcomputed *:/);
+		if(range === null)
 			this.computedString = null;
 		else{
-			let posIni = new vscode.Position(this.vueRange.start.line + computedRange.start.line, computedRange.start.character);
-			let posFin = new vscode.Position(this.vueRange.start.line + computedRange.end.line, computedRange.end.character);
-			var computedText = doc.getText(new vscode.Range(posIni, posFin));
+			let posIni = new vscode.Position(this.vueRange.start.line + range.start.line, range.start.character);
+			let posFin = new vscode.Position(this.vueRange.start.line + range.end.line, range.end.character);
+			this.computedRange = new vscode.Range(posIni, posFin);
+			var computedText = doc.getText(this.computedRange);
 			this.computedString = computedText;
 		}
 	}
@@ -159,9 +168,9 @@ class VueIntellisense{
  */
 var completions = [];
 /**
- * @type{VueIntellisense}
+ * @type{Array<VueIntellisense>}
  */
-var vueIntellisense = null;
+var vueIntellisense = [];
 /**
  * @param {vscode.ExtensionContext} context
  */
@@ -313,11 +322,31 @@ function formatedText(unFormatedText) {
 }
 /**
  * @param {vscode.TextDocument} document 
+ * @param {vscode.Position} position
  */
-function createVueIntellisense(document, isUpdate = false) {
-	if(vueIntellisense === null || isUpdate || document.uri.path !== vueIntellisense.document.uri.path){
-		vueIntellisense = new VueIntellisense(document);
-		completions = vueIntellisense.getCompletionItems();
+function getIntellisense(document, isUpdate = false, position = null) {
+	let intellisense = null;
+	if(position !== null){
+		let i = vueIntellisense.findIndex(x => x.vueRange.contains(position));
+		intellisense = vueIntellisense[i];
+	}
+	else{
+		
+	}
+	if(isUpdate){
+		let i = vueIntellisense.findIndex(x => x.document.uri.path == document.uri.path);
+		if(i !== -1){
+			vueIntellisense = vueIntellisense.filter((v, index) => index !== i);
+			create(document);
+		}
+	}
+	
+}
+function create(document) {
+	if(vueIntellisense === null || vueIntellisense === []){
+		let intellisense = new VueIntellisense(document);
+		vueIntellisense.push(intellisense);
+		completions = intellisense.getCompletionItems();
 	}
 }
 /**
