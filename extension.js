@@ -74,7 +74,7 @@ class VueIntellisense{
 	/**
      * @param {vscode.TextDocument} document String of vue instance 
      */
-	constructor(document){
+	constructor(document, iLine = 0){
 		this.document = document;
 		this.vueString = "";
 		this.dataString = "";
@@ -88,14 +88,17 @@ class VueIntellisense{
 		this.methodsRange = null;
 		/**@type{vscode.Range} */
 		this.computedRange = null;
-		this.getVueString();
+		/**@type{Array<PropCompletion>}*/
+		this.completions = [];
+		this.getVueString(iLine);
 		this.getDataString();
 		this.getMethodsString();
 		this.getComputedString();
 		this.dataObj = this.dataString === null? null : JSON.parse(`{${formatedText(this.dataString)}}`);
 	}
-	getCompletionItems(){
-		let regex = new RegExp(/((?<!: *)(?<=( |\t)*)(\b[A-z]+)(?=(\(\)|:( |\t*)function *))(?!((\(\)\r?\n))|(\(\);)))/, "gs");
+	/**@param {vscode.Position} position */
+	getCompletionItems(position){
+		let regex = new RegExp(/((?<!: *)(?<=( |\t)*)(\b[A-z]+[0-9]*)(?=(\(\)|( |\t)*:( |\t*)function *))(?!((\(\)\r?\n))|(\(\);)))/, "gs");
 		let methodsName = this.methodsString === null? [] : this.methodsString.match(regex);
 		let computedName = this.computedString === null? [] : this.computedString.match(regex);
 		let data = this.dataObj.data || {};
@@ -103,21 +106,26 @@ class VueIntellisense{
 		 * @type{Array<PropCompletion>}
 		 */
 		var completionItems = PropCompletion.getPropCompletion(data);
-		methodsName.forEach(name => {
-			let item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Method);
-			let itemCompletion = new PropCompletion(item, "function");
-			completionItems.push(itemCompletion);
-		});
-		computedName.forEach(name => {
-			let item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Variable);
-			let itemCompletion = new PropCompletion(item, "function");
-			completionItems.push(itemCompletion);
-		});
-		return completionItems;
+		if(!this.methodsRange.contains(position)){
+			methodsName.forEach(name => {
+				let item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Method);
+				let itemCompletion = new PropCompletion(item, "function");
+				completionItems.push(itemCompletion);
+			});
+		}
+		if(!this.computedRange.contains(position)){
+			computedName.forEach(name => {
+				let item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Variable);
+				let itemCompletion = new PropCompletion(item, "function");
+				completionItems.push(itemCompletion);
+			});
+		}
+		this.completions = completionItems;
+		return this.completions;
 	}
-	getVueString(){
+	getVueString(iLine = 0){
 		let doc = this.document;
-		this.vueRange = getRangeText(doc.getText(), /((?<=\=( |	*))\bnew( ) *Vue)\b/);
+		this.vueRange = getRangeText(doc.getText(), /((?<=\=( |	*))\bnew( ) *Vue)\b/, iLine);
 		if(this.vueRange === null)
 			this.vueString = null;
 		else
@@ -164,10 +172,6 @@ class VueIntellisense{
 	}
 }
 /**
- * @type{Array<PropCompletion>}
- */
-var completions = [];
-/**
  * @type{Array<VueIntellisense>}
  */
 var vueIntellisense = [];
@@ -177,9 +181,9 @@ var vueIntellisense = [];
 function activate(context) {
 	let watch = vscode.workspace.createFileSystemWatcher("**/*.js", true,false,false);
 	watch.onDidChange(uri => {
-		if(vueIntellisense !== null && vueIntellisense.document.uri.path === uri.path){
+		if(vueIntellisense !== null && vueIntellisense.length !== 0 && vueIntellisense[0].document.uri.path === uri.path){
 			vscode.workspace.openTextDocument(uri).then(doc => {
-				createVueIntellisense(doc, true);
+				createIntellisense(doc, true);
 			});
 		}
 	})
@@ -197,9 +201,14 @@ function activate(context) {
 		'javascript',
 		{
 			provideCompletionItems(document, position) {
-				createVueIntellisense(document);
+				createIntellisense(document);
+				let intellisense = vueIntellisense.find(x => x.vueRange.contains(position));
+				if(intellisense === undefined){
+					return undefined;
+				}
+				let completions = intellisense.getCompletionItems(position);
 				let linePrefix = document.lineAt(position).text.substr(0, position.character);
-				let prefixArray = linePrefix.split(/[;.\t ]/).reverse()
+				let prefixArray = linePrefix.split(/[;.\t ]/).reverse();
 				let prefix = linePrefix[linePrefix.length-1] === "."? prefixArray[1] : prefixArray[0];
 				if(prefix === "this"){
 					/**
@@ -322,39 +331,36 @@ function formatedText(unFormatedText) {
 }
 /**
  * @param {vscode.TextDocument} document 
- * @param {vscode.Position} position
+ * @param {Boolean} isUpdate 
  */
-function getIntellisense(document, isUpdate = false, position = null) {
-	let intellisense = null;
-	if(position !== null){
-		let i = vueIntellisense.findIndex(x => x.vueRange.contains(position));
-		intellisense = vueIntellisense[i];
-	}
-	else{
-		
-	}
-	if(isUpdate){
-		let i = vueIntellisense.findIndex(x => x.document.uri.path == document.uri.path);
-		if(i !== -1){
-			vueIntellisense = vueIntellisense.filter((v, index) => index !== i);
-			create(document);
+function createIntellisense(document, isUpdate = false) {
+	if(vueIntellisense === null || vueIntellisense.length === 0){
+		let result = document.getText().match(/((?<=\=( |	*))\bnew( ) *Vue)\b/gs).filter(x => x.endsWith("Vue"));
+		let iLine = 0;
+		for (let i = 0; i < result.length; i++) {
+			let intellisense = new VueIntellisense(document, iLine);
+			vueIntellisense.push(intellisense);	
+			iLine = intellisense.dataRange.end.line;
 		}
 	}
-	
-}
-function create(document) {
-	if(vueIntellisense === null || vueIntellisense === []){
-		let intellisense = new VueIntellisense(document);
-		vueIntellisense.push(intellisense);
-		completions = intellisense.getCompletionItems();
+	else{
+		if(isUpdate){
+			vueIntellisense = vueIntellisense.filter(x => x.document.uri.path !== document.uri.path);
+			let result = document.getText().match(/((?<=\=( |	*))\bnew( ) *Vue)\b/gs).filter(x => x.endsWith("Vue"));
+			let iLine = 0;
+			for (let i = 0; i < result.length; i++) {
+				let intellisense = new VueIntellisense(document, iLine);
+				vueIntellisense.push(intellisense);	
+				iLine = intellisense.dataRange.end.line;
+			}
+		}
 	}
 }
 /**
- * 
  * @param {String} doc 
  * @param {RegExp} regex
  */
-function getRangeText(doc, regex) {
+function getRangeText(doc, regex, inictial = 0) {
 	if(!doc){
 		return null;
 	}
@@ -366,6 +372,8 @@ function getRangeText(doc, regex) {
 	var iniData = false;
 	var textLines = doc.split(/\r?\n/);
 	textLines.forEach((line, i) => {
+		if(i < inictial)
+			return;
 		if(finPos !== null)
 			return;
 		else if(iniPos === null){

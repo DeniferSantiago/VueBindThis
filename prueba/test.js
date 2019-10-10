@@ -23,7 +23,8 @@ let app = new Vue({
         arr: ["my","name","is",
          "skrillex"],
         str: "comment",
-        comment: "Hola"
+        comment: "Hola",
+        onSave : true
     },
     methods:{
         workingData(){
@@ -32,6 +33,40 @@ let app = new Vue({
     },
     computed:{
         action(){
+            return this.bool? "true": "false";
+        }
+    }
+});
+let app2 = new Vue({
+    el:"#app",
+    data:{
+        bool2: false,
+        num2: 4,
+        obj2: {
+            name2: "Louis",
+            lastname2:"walker", 
+            data2: {
+                years2:15, 
+                languages2: {
+                    name2: "Spanish", 
+                    level2: "Native"
+                },
+                array2:[ 2, 4, 5 ]
+            }
+        },
+        arr2: ["my","name","is",
+         "skrillex"],
+        str2: "comment",
+        comment2: "Hola",
+        onSave2: true
+    },
+    methods:{
+        workingData2(){
+            let double = this.num * this.num;
+        }
+    },
+    computed:{
+        action2(){
             return this.bool? "true": "false";
         }
     }
